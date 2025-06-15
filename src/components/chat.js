@@ -74,14 +74,57 @@ export default function Chat() {
 
       case 'confirm':
         if (/^y(es)?$/i.test(answer)) {
-          nextBotText = 'Generating your itinerary… 🎉';
-          nextStep    = 'done';
-          // TODO: call your backend API here with `answers`
+          // 1) show a “loading” bot message
+          setMessages(msgs => [
+            ...msgs,
+            { from: 'bot', text: 'Generating your itinerary… 🎉' }
+          ]);
+          setStep('loading');
+
+          // 2) POST the answers
+          fetch("http://localhost:8000/api/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(answers),
+          })
+            .then(res => res.json())
+            .then(data => {
+              // 3) Build a human‐readable summary from the echoed data
+              const summaryLines = [
+                `Start Date: ${data.start_date}`,
+                `End Date: ${data.end_date}`,
+                `Party Size: ${data.party_size}`,
+                `Budget: ${data.budget}`,
+                `Region: ${data.region}`,
+                `Activities: ${data.activities.join(", ")}`,
+                `Extras: ${data.extras || "None"}`,
+              ];
+              const summaryText = summaryLines.join("\n");
+
+              // 4) Push that summary as one or multiple bubbles
+              setMessages(msgs => [
+                ...msgs,
+                { from: 'bot', text: "Here’s what I received:" },
+                { from: 'bot', text: summaryText }
+              ]);
+              setStep('done');
+            })
+            .catch(err => {
+              console.error(err);
+              setMessages(msgs => [
+                ...msgs,
+                { from: 'bot', text: '😞 Oops, something went wrong.' }
+              ]);
+              setStep('done');
+            });
         } else {
-          nextBotText = 'Okay, let me know if you want to change anything.';
-          nextStep    = 'done';
+          setMessages(msgs => [
+            ...msgs,
+            { from: 'bot', text: 'Okay, let me know what to change.' }
+          ]);
+          setStep('done');
         }
-        break;
+      break;
 
       default:
         return;
