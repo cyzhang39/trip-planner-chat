@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""
-preprocess.py
-
-Simplified Yelp dataset preprocessing to build a FAISS vector index for RAG.
-
-Expect `yelp_data/` folder in the same directory containing:
-  - business.json
-  - review.json
-  - tip.json
-
-Resulting index is saved under `yelp_index/`.
-"""
 import json
 from pathlib import Path
 from tqdm import tqdm
@@ -19,17 +6,21 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
+import time
+
+from faiss import IndexFlatL2
+from langchain.vectorstores import FAISS
 
 # Configuration
 DATA_DIR = Path("./../data/yelp")
 OUTPUT_DIR = Path("./../data/index")
 MAX_CHARS = 1000
-
+EMBED_BATCH_SIZE = 2000      # number of docs per embed batch
+CHECKPOINT_INTERVAL = 800000  # docs per checkpoint save
 
 def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list[str]:
     """Split text into chunks of up to max_chars characters."""
     return [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
-
 
 def load_documents() -> list[Document]:
     docs: list[Document] = []
@@ -97,16 +88,47 @@ def load_documents() -> list[Document]:
 
     return docs
 
-
 def main():
-    OUTPUT_DIR.mkdir(exist_ok=True)
     docs = load_documents()
-    print(f"Embedding {len(docs)} documents...")
-    embedder = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
-    vector_store = FAISS.from_documents(docs, embedder)
-    vector_store.save_local(OUTPUT_DIR)
-    print(f"Index saved to {OUTPUT_DIR}")
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
+    vector_store = None
+    batch = []
+    count = 0
+    embedder = HuggingFaceEmbeddings(
+        model_name="Qwen/Qwen3-Embedding-0.6B",
+        model_kwargs={"device": "cuda"}
+    )
+
+    for doc in docs:
+        batch.append(doc)
+        count += 1
+        # print(count)
+        # Checkpoint at intervals
+        if count % CHECKPOINT_INTERVAL == 0:
+            print(f"Indexing and checkpointing {count} documents...")
+            if vector_store is None:
+                vector_store = FAISS.from_documents(batch, embedder)
+            else:
+                vector_store.add_documents(batch)
+            # Save checkpoint
+            cp_dir = OUTPUT_DIR / f"checkpoint_{count}"
+            cp_dir.mkdir(parents=True, exist_ok=True)
+            vector_store.save_local(cp_dir)
+            batch = []
+
+    # Process remaining docs
+    if batch:
+        print(f"Indexing final {len(batch)} documents, total {count}...")
+        if vector_store is None:
+            vector_store = FAISS.from_documents(batch, embedder)
+        else:
+            vector_store.add_documents(batch)
+
+    # Final save
+    vector_store.save_local(OUTPUT_DIR)
+    print(f"Indexing complete. Total documents: {count}. Index saved to {OUTPUT_DIR}")
+    
 
 if __name__ == "__main__":
     main()
