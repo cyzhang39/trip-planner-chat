@@ -1,6 +1,5 @@
-// src/components/Chat.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import '../styles/main.css';  // adjust path as needed
+import '../styles/main.css';
 
 export default function Chat() {
   const [messages, setMessages] = useState([
@@ -11,17 +10,13 @@ export default function Chat() {
   const [input, setInput]     = useState('');
   const bottomRef            = useRef(null);
 
-  // auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const sendMessage = (content) => {
-    // 1) add user message
     setMessages(msgs => [...msgs, { from: 'user', text: content }]);
-    // 2) clear input
     setInput('');
-    // 3) determine next bot prompt
     handleNextStep(content);
   };
 
@@ -74,14 +69,12 @@ export default function Chat() {
 
       case 'confirm':
         if (/^y(es)?$/i.test(answer)) {
-          // 1) show a “loading” bot message
           setMessages(msgs => [
             ...msgs,
             { from: 'bot', text: 'Generating your itinerary… 🎉' }
           ]);
           setStep('loading');
 
-          // 2) POST the answers
           fetch("http://localhost:8000/api/plan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -89,7 +82,6 @@ export default function Chat() {
           })
             .then(res => res.json())
             .then(data => {
-              // 3) Build a human‐readable summary from the echoed data
               const summaryLines = [
                 `Start Date: ${data.start_date}`,
                 `End Date: ${data.end_date}`,
@@ -101,7 +93,6 @@ export default function Chat() {
               ];
               const summaryText = summaryLines.join("\n");
 
-              // 4) Push that summary as one or multiple bubbles
               setMessages(msgs => [
                 ...msgs,
                 { from: 'bot', text: "Here’s what I received:" },
@@ -136,7 +127,7 @@ export default function Chat() {
 
   return (
     <div className="chat-container">
-      {/* Scrollable messages */}
+      {}
       <div className="chat-window">
         {messages.map((m, i) => (
           <div key={i} className={`message ${m.from}`}>
@@ -146,7 +137,6 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Fixed input at bottom */}
       <div className="input-container">
         <input
           type="text"
