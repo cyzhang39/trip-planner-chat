@@ -15,8 +15,7 @@ from langchain.vectorstores import FAISS
 DATA_DIR = Path("./../data/yelp")
 OUTPUT_DIR = Path("./../data/index")
 MAX_CHARS = 1000
-EMBED_BATCH_SIZE = 2000      # number of docs per embed batch
-CHECKPOINT_INTERVAL = 800000  # docs per checkpoint save
+CHECKPOINT_INTERVAL = 100000  # docs per checkpoint save
 
 def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list[str]:
     """Split text into chunks of up to max_chars characters."""
@@ -28,7 +27,7 @@ def load_documents() -> list[Document]:
     # Load businesses
     for line in tqdm(open(DATA_DIR / "yelp_academic_dataset_business.json", encoding="utf-8"), desc="Businesses"):
         b = json.loads(line)
-        if b.get("is_open") != 1 or not b.get("state"):  # only open US businesses
+        if b.get("is_open") != 1 or b.get("state") != "CA":
             continue
 
         business_id = b.get("business_id")
