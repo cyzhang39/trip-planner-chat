@@ -7,13 +7,26 @@ import requests
 dotenv_path = Path(__file__).parent.parent / "configs" / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
+PROMPT = """
+You are a travel assistant. 
+Use itineraries below as reference if they are relevant, and craft a day-by-day itinerary. 
+Be concise (within 4000 tokens).
+Always answer in plain text, no markdown or styling characters.
+When you output the itinerary, structure it _exactly_ like this:
+Day 1: <Day 1 activities>
+Day 2: <Day 2 activities>
+…
+Day N: <Day N activities>
+Use one line per day, with “Day X:” at the start, and nothing else.
+"""
+
+
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
     base_url=os.getenv("BASE_URL")
 )
 
 def build_query(req) -> str:
-    """Turn the TripRequest model into a single prompt string."""
     activities = ", ".join(req.activities)
     extras     = req.extras or "None"
     return (
@@ -32,14 +45,6 @@ def retrieve(query:str, k: int = 2):
 
 
 def generate_itinerary(req) -> str:
-    """
-    Full RAG flow:
-      1) Build the natural‐language query
-      2) Retrieve top-k docs
-      3) Assemble system+context messages
-      4) Call the OpenAI chat API
-      5) Return the assistant’s reply
-    """
     query = build_query(req)
 
     docs = retrieve(query, 2)
@@ -47,8 +52,7 @@ def generate_itinerary(req) -> str:
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful travel assistant. "
-                       "Use the facts below to craft a day-by-day itinerary."
+            "content": PROMPT 
         }
     ]
     for d in docs:
@@ -56,7 +60,7 @@ def generate_itinerary(req) -> str:
     messages.append({"role": "user", "content": query})
 
     resp = client.chat.completions.create(
-        model="gpt-4.1:free",  # swap to your fine-tuned model when ready
+        model="gpt-4.1:free",
         messages=messages,
         temperature=0.3,
         stream=False

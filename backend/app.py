@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware   # ← import added
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
@@ -7,7 +7,6 @@ from .rag import generate_itinerary
 
 app = FastAPI()
 
-# CORS settings
 origins = [
     "http://localhost:3000",
 ]
@@ -35,7 +34,7 @@ class TripRequest(BaseModel):
 class TripResponse(BaseModel):
     itinerary: str
 
-@app.post("/api/plan", response_model=TripRequest)
+@app.post("/api/plan", response_model=TripResponse)
 async def plan_trip(req: TripRequest):
     itinerary_text = generate_itinerary(req)
     print(itinerary_text)

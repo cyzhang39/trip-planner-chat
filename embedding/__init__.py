@@ -1,5 +1,3 @@
-# trip_planner/embeddings/__init__.py
-
 from .format     import clean_json, clean_text
 from .loader    import load_pairs, to_documents
 from .embedder  import load_embedder

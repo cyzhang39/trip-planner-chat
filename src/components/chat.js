@@ -5,10 +5,10 @@ export default function Chat() {
   const [messages, setMessages] = useState([
     { from: 'bot', text: 'Hi! To start, what’s your trip start date (YYYY-MM-DD)?' }
   ]);
-  const [step, setStep]       = useState('start-date');
+  const [step, setStep] = useState('start-date');
   const [answers, setAnswers] = useState({});
-  const [input, setInput]     = useState('');
-  const bottomRef            = useRef(null);
+  const [input, setInput] = useState('');
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -22,49 +22,49 @@ export default function Chat() {
 
   const handleNextStep = (answer) => {
     let nextBotText = '';
-    let nextStep    = '';
+    let nextStep = '';
 
     switch (step) {
       case 'start-date':
         setAnswers(a => ({ ...a, start_date: answer }));
         nextBotText = 'Great—what’s your end date?';
-        nextStep    = 'end-date';
+        nextStep = 'end-date';
         break;
 
       case 'end-date':
         setAnswers(a => ({ ...a, end_date: answer }));
         nextBotText = 'How many people are traveling?';
-        nextStep    = 'party-size';
+        nextStep = 'party-size';
         break;
 
       case 'party-size':
         setAnswers(a => ({ ...a, party_size: answer }));
         nextBotText = 'What’s your budget per day? (<100, 100-200, 200-300, >300)';
-        nextStep    = 'budget';
+        nextStep = 'budget';
         break;
 
       case 'budget':
         setAnswers(a => ({ ...a, budget: answer }));
         nextBotText = 'Which region/country are you visiting?';
-        nextStep    = 'region';
+        nextStep = 'region';
         break;
 
       case 'region':
         setAnswers(a => ({ ...a, region: answer }));
         nextBotText = 'Any top activity categories? (e.g. beach, food. Comma-separated.)';
-        nextStep    = 'activities';
+        nextStep = 'activities';
         break;
 
       case 'activities':
         setAnswers(a => ({ ...a, activities: answer.split(',').map(s => s.trim()) }));
         nextBotText = 'Anything else we should know?';
-        nextStep    = 'extras';
+        nextStep = 'extras';
         break;
 
       case 'extras':
         setAnswers(a => ({ ...a, extras: answer }));
         nextBotText = 'All set! Shall I generate your itinerary now? (yes/no)';
-        nextStep    = 'confirm';
+        nextStep = 'confirm';
         break;
 
       case 'confirm':
@@ -82,21 +82,16 @@ export default function Chat() {
           })
             .then(res => res.json())
             .then(data => {
-              const summaryLines = [
-                `Start Date: ${data.start_date}`,
-                `End Date: ${data.end_date}`,
-                `Party Size: ${data.party_size}`,
-                `Budget: ${data.budget}`,
-                `Region: ${data.region}`,
-                `Activities: ${data.activities.join(", ")}`,
-                `Extras: ${data.extras || "None"}`,
-              ];
-              const summaryText = summaryLines.join("\n");
+              const itinerary = data.itinerary || data;
+              // const lines = itinerary.split('\n').filter(line => line.trim());
+              const days = itinerary.split(/\n?Day\s+/).filter(s => s.trim()).map(s => 'Day ' + s.trim())
+              const m = days.join('\n\n')
 
               setMessages(msgs => [
                 ...msgs,
-                { from: 'bot', text: "Here’s what I received:" },
-                { from: 'bot', text: summaryText }
+                { from: 'bot', text: "Here’s your itinerary" },
+                { from: 'bot', text: m },
+                // ...lines.map((line, i) => ({ from: 'bot', text: line }))
               ]);
               setStep('done');
             })
