@@ -4,16 +4,16 @@ from tqdm import tqdm
 
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from langchain.vectorstores import FAISS
-from langchain.docstore.document import Document
+from custom_langchain.vectorstores import FAISS
+from custom_langchain.docstore.document import Document
 import time
 
 from faiss import IndexFlatL2
-from langchain.vectorstores import FAISS
+from custom_langchain.vectorstores import FAISS
 
 # Configuration
-DATA_DIR = Path("./../data/yelp")
-OUTPUT_DIR = Path("./../data/index")
+DATA_DIR = Path("data/yelp")
+OUTPUT_DIR = Path("data/index")
 MAX_CHARS = 1000
 CHECKPOINT_INTERVAL = 100000  # docs per checkpoint save
 

@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
+from custom_langchain.vectorstores import FAISS
 
 # 1) Re‐instantiate your embedder exactly as before
 embedder = HuggingFaceEmbeddings(
@@ -8,7 +8,7 @@ embedder = HuggingFaceEmbeddings(
 )
 
 # 2) Point to the folder for your last checkpoint
-CHECKPOINT_DIR = "./../data/index"
+CHECKPOINT_DIR = "data/index"
 
 # 3) Load the FAISS index from disk
 vector_store = FAISS.load_local(CHECKPOINT_DIR, embedder, allow_dangerous_deserialization=True)
@@ -16,5 +16,5 @@ vector_store = FAISS.load_local(CHECKPOINT_DIR, embedder, allow_dangerous_deseri
 # Now `vector_store` contains exactly the ~4M docs you had embedded so far.
 # You can immediately do:
 docs = vector_store.similarity_search("best beach bars in California", k=5)
-for d in docs:
-    print(d.metadata, d.page_content[:200])
+# for d in docs:
+#     print(d.metadata, d.page_content[:200])
