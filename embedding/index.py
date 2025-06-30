@@ -1,8 +1,8 @@
 import torch
 from pathlib import Path
 from typing import List
-from langchain.vectorstores import FAISS
-from langchain.docstore.document import Document
+from custom_langchain.vectorstores import FAISS
+from custom_langchain.docstore.document import Document
 
 def build_faiss(docs: List[Document], embedder, embed_batch: int = 256):
     """

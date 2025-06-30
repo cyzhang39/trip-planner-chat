@@ -4,38 +4,41 @@ import os
 from pathlib import Path
 import requests
 
-dotenv_path = Path(__file__).parent.parent / "configs" / ".env"
+dotenv_path = "configs/.env"
 load_dotenv(dotenv_path=dotenv_path)
 
 PROMPT = """
 You are a travel assistant. 
 Use itineraries below as reference if they are relevant, and craft a day-by-day itinerary. 
-Be concise (within 4000 tokens).
 Always answer in plain text, no markdown or styling characters.
 When you output the itinerary, structure it _exactly_ like this:
 Day 1: <Day 1 activities>
 Day 2: <Day 2 activities>
 …
 Day N: <Day N activities>
+Be detailed on activities.
 Use one line per day, with “Day X:” at the start, and nothing else.
 """
 
+API_KEY=os.getenv("HF_KEY")
+BASE_URL=os.getenv("HF_BASE_URL")
+MODEL="meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("BASE_URL")
+    api_key=API_KEY,
+    base_url=BASE_URL
 )
 
-def build_query(req) -> str:
+def build_query(req):
     activities = ", ".join(req.activities)
-    extras     = req.extras or "None"
+    extras = req.extras or "None"
     return (
         f"Plan a trip from {req.start_date} to {req.end_date} in {req.region}, "
         f"for {req.party_size} people, with a budget of {req.budget}/day, "
         f"interested in {activities}. Extras: {extras}."
     )
 
-def retrieve(query:str, k: int = 2):
+def retrieve(query:str, k: int = 3):
     resp = requests.post(
         os.getenv("RETRIEVE_URL"),
         json={"query": query, "k": k}
@@ -44,10 +47,10 @@ def retrieve(query:str, k: int = 2):
     return resp.json()["documents"]
 
 
-def generate_itinerary(req) -> str:
+def generate_itinerary(req):
     query = build_query(req)
 
-    docs = retrieve(query, 2)
+    docs = retrieve(query, 3)
 
     messages = [
         {
@@ -60,7 +63,7 @@ def generate_itinerary(req) -> str:
     messages.append({"role": "user", "content": query})
 
     resp = client.chat.completions.create(
-        model="gpt-4.1:free",
+        model=MODEL,
         messages=messages,
         temperature=0.3,
         stream=False

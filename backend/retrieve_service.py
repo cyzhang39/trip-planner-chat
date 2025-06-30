@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Any
 
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
+from custom_langchain.vectorstores import FAISS
 
 embedder = HuggingFaceEmbeddings(
     model_name="Qwen/Qwen3-Embedding-0.6B",
