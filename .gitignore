@@ -27,3 +27,4 @@ yarn-error.log*
 
 **/__pycache__
 /configs
+trip_planner.egg-info/
