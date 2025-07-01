@@ -4,12 +4,12 @@ from tqdm import tqdm
 
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from custom_langchain.vectorstores import FAISS
-from custom_langchain.docstore.document import Document
+from langchain_community.vectorstores import FAISS
+from langchain_community.docstore.document import Document
 import time
 
 from faiss import IndexFlatL2
-from custom_langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 
 # Configuration
 DATA_DIR = Path("data/yelp")

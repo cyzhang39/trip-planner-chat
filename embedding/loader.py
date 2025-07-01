@@ -1,8 +1,8 @@
 from pathlib import Path
 import json
 from typing import List, Tuple
-from custom_langchain.docstore.document import Document
-from custom_langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.docstore.document import Document
+from langchain_community.text_splitter import RecursiveCharacterTextSplitter
 
 def load_pairs(cleaned_json: Path):
     pairs = []
