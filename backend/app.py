@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
-from .rag import generate_itinerary
+from .rag import generate_itinerary, retrieve, build_query, followup
 
 app = FastAPI()
 
@@ -20,6 +20,8 @@ app.add_middleware(
     allow_headers=["*"],        
 )
 
+query = ""
+docs = None
 
 
 class TripRequest(BaseModel):
@@ -34,10 +36,23 @@ class TripRequest(BaseModel):
 class TripResponse(BaseModel):
     itinerary: str
 
+class ChatRequest(BaseModel):
+    question: str
+    chat_history: List[dict]
+
+class ChatResponse(BaseModel):
+    answer: str
+
 @app.post("/api/plan", response_model=TripResponse)
 async def plan_trip(req: TripRequest):
-    itinerary_text = generate_itinerary(req)
-    print(itinerary_text)
+    global query
+    global docs
+    query = build_query(req)
+    docs = retrieve(query, 3)
+    itinerary_text = generate_itinerary(query, docs)
     return TripResponse(itinerary=itinerary_text)
 
-# @app.post("/api/embed", response_model=EmbedRequest)
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(req: ChatRequest):
+    answer = followup(req.question, req.chat_history, docs)
+    return ChatResponse(answer=answer)

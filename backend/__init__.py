@@ -1,6 +1,6 @@
-from .rag import build_query, generate_itinerary
+from .rag import build_query, generate_itinerary, retrieve, followup
 
 
 __all__ = [
-    "build_query", "generate_itinerary"
+    "build_query", "generate_itinerary", "retrieve", "followup"
 ]

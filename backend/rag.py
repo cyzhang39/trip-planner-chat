@@ -47,17 +47,8 @@ def retrieve(query:str, k: int = 3):
     return resp.json()["documents"]
 
 
-def generate_itinerary(req):
-    query = build_query(req)
-
-    docs = retrieve(query, 3)
-
-    messages = [
-        {
-            "role": "system",
-            "content": PROMPT 
-        }
-    ]
+def generate_itinerary(query, docs):
+    messages = [{"role": "system", "content": PROMPT}]
     for d in docs:
         messages.append({"role": "system", "content": d["page_content"]})
     messages.append({"role": "user", "content": query})
@@ -70,3 +61,24 @@ def generate_itinerary(req):
     )
 
     return resp.choices[0].message.content
+
+def followup(question: str, chat_history: list[dict], docs) -> str:
+    messages = [
+        {"role": "system", "content": PROMPT}
+    ]
+    for d in docs:
+        messages.append({"role": "system", "content": d["page_content"]})
+
+    for msg in chat_history:
+        role = "user" if msg["from"] == "user" else "assistant"
+        messages.append({"role": role, "content": msg["text"]})
+
+    messages.append({"role": "user", "content": question})
+
+    # call the model
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        temperature=0.3
+    )
+    return resp.choices[0].message.content    

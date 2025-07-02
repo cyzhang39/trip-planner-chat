@@ -15,15 +15,49 @@ export default function Chat() {
   }, [messages]);
 
   const sendMessage = (content) => {
-    setMessages(msgs => [...msgs, { from: 'user', text: content }]);
+    const newMessage = { from: 'user', text: content };
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setInput('');
-    handleNextStep(content);
+
+    if (step === 'listening') {
+      handleFollowUp(content, updatedMessages);
+    } else {
+      handleNextStep(content);
+    }
   };
+
+  const handleFollowUp = (question, history) => {
+    // setMessages(msgs => [...msgs, { from: 'user', text: question }]);
+    setStep('loading');
+
+    fetch("http://localhost:8000/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({question, chat_history: history}),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: data.answer }
+        ]);
+        setStep('listening');
+      })
+      .catch(err => {
+        console.error(err);
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: '😞 Something went wrong.' }
+        ]);
+        setStep('listening');
+      });
+  }
+
 
   const handleNextStep = (answer) => {
     let nextBotText = '';
     let nextStep = '';
-
     switch (step) {
       case 'start-date':
         setAnswers(a => ({ ...a, start_date: answer }));
@@ -93,7 +127,7 @@ export default function Chat() {
                 { from: 'bot', text: m },
                 // ...lines.map((line, i) => ({ from: 'bot', text: line }))
               ]);
-              setStep('done');
+              setStep('listening');
             })
             .catch(err => {
               console.error(err);
@@ -101,16 +135,17 @@ export default function Chat() {
                 ...msgs,
                 { from: 'bot', text: '😞 Oops, something went wrong.' }
               ]);
-              setStep('done');
+              setStep('listening');
             });
+          return;
         } else {
           setMessages(msgs => [
             ...msgs,
             { from: 'bot', text: 'Okay, let me know what to change.' }
           ]);
-          setStep('done');
+          setStep('listening');
         }
-      break;
+        break;
 
       default:
         return;
