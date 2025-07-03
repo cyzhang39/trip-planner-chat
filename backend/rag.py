@@ -33,9 +33,9 @@ def build_query(req):
     activities = ", ".join(req.activities)
     extras = req.extras or "None"
     return (
-        f"Plan a trip from {req.start_date} to {req.end_date} in {req.region}, "
-        f"for {req.party_size} people, with a budget of {req.budget}/day, "
-        f"interested in {activities}. Extras: {extras}."
+        f"Plan a detailed trip from {req.start_date} to {req.end_date} in {req.region}, "
+        f"for {req.party_size} people, with a budget per person of {req.budget}/day. "
+        f"Interested in {activities}. Extras: {extras}."
     )
 
 def retrieve(query:str, k: int = 3):

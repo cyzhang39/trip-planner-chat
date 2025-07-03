@@ -1,12 +1,8 @@
+// src/components/Chat.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/main.css';
 
-export default function Chat() {
-  const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Hi! To start, what’s your trip start date (YYYY-MM-DD)?' }
-  ]);
-  const [step, setStep] = useState('start-date');
-  const [answers, setAnswers] = useState({});
+export default function Chat({messages, step, answers, onSessionChange}) {
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
 
@@ -14,99 +10,87 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const update = (fields) => {
+    onSessionChange(fields);
+  };
+  const setMessages = (msgs) => update({ messages: msgs });
+  const setStep = (s) => update({ step: s });
+  const setAnswers = (ans) => update({ answers: ans });
+
   const sendMessage = (content) => {
-    const newMessage = { from: 'user', text: content };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
+    const userMsg = { from: 'user', text: content };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setInput('');
 
     if (step === 'listening') {
-      handleFollowUp(content, updatedMessages);
+      handleFollowUp(content, updated);
     } else {
-      handleNextStep(content);
+      handleNextStep(content, updated);
     }
   };
 
   const handleFollowUp = (question, history) => {
-    // setMessages(msgs => [...msgs, { from: 'user', text: question }]);
     setStep('loading');
-
     fetch("http://localhost:8000/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({question, chat_history: history}),
+      body: JSON.stringify({ question, chat_history: history }),
     })
       .then(res => res.json())
       .then(data => {
-        setMessages(msgs => [
-          ...msgs,
-          { from: 'bot', text: data.answer }
-        ]);
+        setMessages([...history, { from: 'bot', text: data.answer }]);
         setStep('listening');
       })
-      .catch(err => {
-        console.error(err);
-        setMessages(msgs => [
-          ...msgs,
-          { from: 'bot', text: '😞 Something went wrong.' }
-        ]);
+      .catch(() => {
+        setMessages([...history, { from: 'bot', text: '😞 Something went wrong.' }]);
         setStep('listening');
       });
-  }
+  };
 
-
-  const handleNextStep = (answer) => {
+  const handleNextStep = (answer, history) => {
     let nextBotText = '';
-    let nextStep = '';
+    let nextStep    = '';
+
     switch (step) {
       case 'start-date':
-        setAnswers(a => ({ ...a, start_date: answer }));
-        nextBotText = 'Great—what’s your end date?';
-        nextStep = 'end-date';
+        setAnswers({ ...answers, start_date: answer });
+        nextBotText = 'Great — and what\'s your end date?';
+        nextStep    = 'end-date';
         break;
-
       case 'end-date':
-        setAnswers(a => ({ ...a, end_date: answer }));
-        nextBotText = 'How many people are traveling?';
-        nextStep = 'party-size';
+        setAnswers({ ...answers, end_date: answer });
+        nextBotText = 'How many people are there in total traveling?';
+        nextStep    = 'party-size';
         break;
-
       case 'party-size':
-        setAnswers(a => ({ ...a, party_size: answer }));
-        nextBotText = 'What’s your budget per day? (<100, 100-200, 200-300, >300)';
-        nextStep = 'budget';
+        setAnswers({ ...answers, party_size: answer });
+        nextBotText = 'What\'s your estimated average budget per day per traveler? (<100, 100-200, 200-300, >300)';
+        nextStep    = 'budget';
         break;
-
       case 'budget':
-        setAnswers(a => ({ ...a, budget: answer }));
+        setAnswers({ ...answers, budget: answer });
         nextBotText = 'Which region/country are you visiting?';
-        nextStep = 'region';
+        nextStep    = 'region';
         break;
-
       case 'region':
-        setAnswers(a => ({ ...a, region: answer }));
-        nextBotText = 'Any top activity categories? (e.g. beach, food. Comma-separated.)';
-        nextStep = 'activities';
+        setAnswers({ ...answers, region: answer });
+        nextBotText = 'Any top activity categories? (e.g. beach, food. Comma-separated!)';
+        nextStep    = 'activities';
         break;
-
       case 'activities':
-        setAnswers(a => ({ ...a, activities: answer.split(',').map(s => s.trim()) }));
-        nextBotText = 'Anything else we should know?';
-        nextStep = 'extras';
+        setAnswers({ ...answers, activities: answer.split(',').map(s => s.trim()) });
+        nextBotText = 'Anything else I should know?';
+        nextStep    = 'extras';
         break;
-
       case 'extras':
-        setAnswers(a => ({ ...a, extras: answer }));
+        setAnswers({ ...answers, extras: answer });
         nextBotText = 'All set! Shall I generate your itinerary now? (yes/no)';
-        nextStep = 'confirm';
+        nextStep    = 'confirm';
         break;
-
       case 'confirm':
         if (/^y(es)?$/i.test(answer)) {
-          setMessages(msgs => [
-            ...msgs,
-            { from: 'bot', text: 'Generating your itinerary… 🎉' }
-          ]);
+          setMessages([...history, { from: 'bot', text: 'Generating your itinerary… 🎉' }]);
           setStep('loading');
 
           fetch("http://localhost:8000/api/plan", {
@@ -116,33 +100,21 @@ export default function Chat() {
           })
             .then(res => res.json())
             .then(data => {
-              const itinerary = data.itinerary || data;
-              // const lines = itinerary.split('\n').filter(line => line.trim());
-              const days = itinerary.split(/\n?Day\s+/).filter(s => s.trim()).map(s => 'Day ' + s.trim())
-              const m = days.join('\n\n')
-
-              setMessages(msgs => [
-                ...msgs,
-                { from: 'bot', text: "Here’s your itinerary" },
-                { from: 'bot', text: m },
-                // ...lines.map((line, i) => ({ from: 'bot', text: line }))
+              const itinerary = data.itinerary || '';
+              setMessages([
+                ...history,
+                { from: 'bot', text: "Here\'s your itinerary:" },
+                { from: 'bot', text: itinerary }
               ]);
               setStep('listening');
             })
-            .catch(err => {
-              console.error(err);
-              setMessages(msgs => [
-                ...msgs,
-                { from: 'bot', text: '😞 Oops, something went wrong.' }
-              ]);
+            .catch(() => {
+              setMessages([...history, { from: 'bot', text: '😞 Oops, something went wrong.' }]);
               setStep('listening');
             });
           return;
         } else {
-          setMessages(msgs => [
-            ...msgs,
-            { from: 'bot', text: 'Okay, let me know what to change.' }
-          ]);
+          setMessages([...history, { from: 'bot', text: 'Okay, let me know what to change.' }]);
           setStep('listening');
         }
         break;
@@ -151,15 +123,16 @@ export default function Chat() {
         return;
     }
 
-    setMessages(msgs => [...msgs, { from: 'bot', text: nextBotText }]);
-    setStep(nextStep);
+    if (nextBotText) {
+      setMessages([...history, { from: 'bot', text: nextBotText }]);
+      setStep(nextStep);
+    }
   };
 
   return (
     <div className="chat-container">
-      {}
       <div className="chat-window">
-        {messages.map((m, i) => (
+        {messages.map((m,i) => (
           <div key={i} className={`message ${m.from}`}>
             <div className="bubble">{m.text}</div>
           </div>
@@ -171,19 +144,16 @@ export default function Chat() {
         <input
           type="text"
           value={input}
+          disabled={step === 'loading'}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && input.trim()) {
-              sendMessage(input.trim());
-            }
-          }}
+          onKeyDown={e => e.key === 'Enter' && input.trim() && sendMessage(input.trim())}
           placeholder="Type your answer…"
         />
         <button
           onClick={() => input.trim() && sendMessage(input.trim())}
-          disabled={!input.trim()}
+          disabled={!input.trim() || step === 'loading'}
         >
-          Send
+          {step === 'loading' ? '…' : 'Send'}
         </button>
       </div>
     </div>
