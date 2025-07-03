@@ -28,7 +28,7 @@ export default function App() {
     const newSession = {
       sid, 
       name: `Chat ${num}`,
-      messages: [{ from: 'bot', text: 'Hi! I am your trip planner assistant. Before generating your itinerary, please answer a few questions first. \n First, when do you plan to start this trip (YYYY-MM-DD)?' }],
+      messages: [{ from: 'bot', text: 'Hi! I am your trip planner assistant. Before generating your itinerary, please answer a few questions. \nFirst, when do you plan to start this trip (YYYY-MM-DD)?' }],
       step: 'start-date',
       answers: {}
     }

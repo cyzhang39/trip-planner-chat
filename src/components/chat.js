@@ -17,6 +17,21 @@ export default function Chat({messages, step, answers, onSessionChange}) {
   const setStep = (s) => update({ step: s });
   const setAnswers = (ans) => update({ answers: ans });
 
+  const download = () => {
+    const txt = messages.map(m => `${m.from === 'user' ? 'You' : 'Assistant'}: ${m.text}`).join('\n\n');
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'trip_planner_conversation.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+
+
   const sendMessage = (content) => {
     const userMsg = { from: 'user', text: content };
     const updated = [...messages, userMsg];
@@ -131,6 +146,9 @@ export default function Chat({messages, step, answers, onSessionChange}) {
 
   return (
     <div className="chat-container">
+      <div className='chat-head'>
+        <button className='download-btn' onClick={download}> Download conversation (txt)</button>
+      </div>
       <div className="chat-window">
         {messages.map((m,i) => (
           <div key={i} className={`message ${m.from}`}>
