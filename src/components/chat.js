@@ -1,163 +1,199 @@
-// src/components/Chat.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import '../styles/main.css';
+import {API_BASE} from '../api';
 
-export default function Chat({messages, step, answers, onSessionChange}) {
+export default function Chat({messages = [], step, answers, onSessionChange, sessionId, token}){
   const [input, setInput] = useState('');
-  const bottomRef = useRef(null);
+  const msgInput = useRef(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => {msgInput.current?.scrollIntoView({behavior: 'smooth'})}, [messages]);
 
-  const update = (fields) => {
-    onSessionChange(fields);
-  };
-  const setMessages = (msgs) => update({ messages: msgs });
-  const setStep = (s) => update({ step: s });
-  const setAnswers = (ans) => update({ answers: ans });
+  const setMessages= msgs => onSessionChange({messages: msgs});
+  const setStep = s => onSessionChange({step: s});
+  const setAnswers = a => onSessionChange({answers: a});
 
-  const download = () => {
-    const txt = messages.map(m => `${m.from === 'user' ? 'You' : 'Assistant'}: ${m.text}`).join('\n\n');
-    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'trip_planner_conversation.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-
-
-  const sendMessage = (content) => {
-    const userMsg = { from: 'user', text: content };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
-    setInput('');
-
-    if (step === 'listening') {
-      handleFollowUp(content, updated);
-    } else {
-      handleNextStep(content, updated);
+  const persist = async (from_user, text) => {
+    try{
+      await fetch(`${API_BASE}/api/sessions/${sessionId}/messages`, 
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({from_user, text})
+      });
+    }catch (e){
+      console.error('Persist error:', e);
     }
   };
 
-  const handleFollowUp = (question, history) => {
-    setStep('loading');
-    fetch("http://localhost:8000/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, chat_history: history }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        setMessages([...history, { from: 'bot', text: data.answer }]);
-        setStep('listening');
-      })
-      .catch(() => {
-        setMessages([...history, { from: 'bot', text: '😞 Something went wrong.' }]);
-        setStep('listening');
-      });
+  const sendMessage = async content => {
+    const userMsg = {from: 'user', text: content};
+    const nxt = [...messages, userMsg];
+    setMessages(nxt);
+    setInput('');
+    await persist('user', content);
+
+    if (step === 'listening') {
+      await handleFollowUp(content, nxt);
+    } else {
+      await handleNextStep(content, nxt);
+    }
   };
 
-  const handleNextStep = (answer, history) => {
-    let nextBotText = '';
-    let nextStep    = '';
+  const handleFollowUp = async (question, history) => {
+    setStep('loading');
+    let response = 'Something went wrong...Perhaps model ran out of tokens.';
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, 
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question,
+          chat_history: history
+        })
+      });
+      response = (await res.json()).answer;
+    }catch (e){
+      console.error('Chat API error:', e);
+    }
+
+    const bot = {from: 'bot', text: response};
+    setMessages(prev => [...prev, bot]);
+    await persist('bot', response);
+    setStep('listening');
+  };
+
+  const handleNextStep = async (answer, history) => {
+    let question = '';
+    let stp = '';
 
     switch (step) {
       case 'start-date':
-        setAnswers({ ...answers, start_date: answer });
-        nextBotText = 'Great — and what\'s your end date?';
-        nextStep    = 'end-date';
+        setAnswers({...answers, start_date: answer});
+        question = "Great — and what's your end date?";
+        stp = 'end-date';
         break;
       case 'end-date':
-        setAnswers({ ...answers, end_date: answer });
-        nextBotText = 'How many people are there in total traveling?';
-        nextStep    = 'party-size';
+        setAnswers({...answers, end_date: answer});
+        question = 'How many people are traveling?';
+        stp = 'party-size';
         break;
       case 'party-size':
-        setAnswers({ ...answers, party_size: answer });
-        nextBotText = 'What\'s your estimated average budget per day per traveler? (<100, 100-200, 200-300, >300)';
-        nextStep    = 'budget';
+        setAnswers({...answers, party_size: answer});
+        question = "What's your per person budget per day in terms of US Dollar? (<100, 100-200, 200-300, 300-400, 400-500, >500)";
+        stp = 'budget';
         break;
       case 'budget':
-        setAnswers({ ...answers, budget: answer });
-        nextBotText = 'Which region/country are you visiting?';
-        nextStep    = 'region';
+        setAnswers({...answers, budget: answer});
+        question = 'Which region/country are you visiting?';
+        stp = 'region';
         break;
       case 'region':
-        setAnswers({ ...answers, region: answer });
-        nextBotText = 'Any top activity categories? (e.g. beach, food. Comma-separated!)';
-        nextStep    = 'activities';
+        setAnswers({...answers, region: answer});
+        question = 'What activities are you interested in? (e.g. beach, food — COMMA SEPERATED)';
+        stp = 'activities';
         break;
       case 'activities':
-        setAnswers({ ...answers, activities: answer.split(',').map(s => s.trim()) });
-        nextBotText = 'Anything else I should know?';
-        nextStep    = 'extras';
+        setAnswers({...answers, activities: answer.split(',').map(s => s.trim())});
+        question = 'Anything else I should know?';
+        stp = 'extras';
         break;
       case 'extras':
-        setAnswers({ ...answers, extras: answer });
-        nextBotText = 'All set! Shall I generate your itinerary now? (yes/no)';
-        nextStep    = 'confirm';
+        setAnswers({...answers, extras: answer});
+        question = 'All set! Generate itinerary now? (yes/no)';
+        stp = 'confirm';
         break;
       case 'confirm':
+        setStep('loading');
         if (/^y(es)?$/i.test(answer)) {
-          setMessages([...history, { from: 'bot', text: 'Generating your itinerary… 🎉' }]);
-          setStep('loading');
+          // const summaryLines = [
+          //   `Start Date: ${answers.start_date}`,
+          //   `End Date: ${answers.end_date}`,
+          //   `Party Size: ${answers.party_size}`,
+          //   `Budget: ${answers.budget}`,
+          //   `Region: ${answers.region}`,
+          //   `Activities: ${answers.activities.join(', ')}`,
+          //   `Extras: ${answers.extras || 'None'}`
+          // ];
+          // const summaryText = summaryLines.join('\n');
+          // const recapMsg = { from: 'bot', text: "Here’s what I received:\n" + summaryText };
 
-          fetch("http://localhost:8000/api/plan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(answers),
-          })
-            .then(res => res.json())
-            .then(data => {
-              const itinerary = data.itinerary || '';
-              setMessages([
-                ...history,
-                { from: 'bot', text: "Here\'s your itinerary:" },
-                { from: 'bot', text: itinerary }
-              ]);
-              setStep('listening');
-            })
-            .catch(() => {
-              setMessages([...history, { from: 'bot', text: '😞 Oops, something went wrong.' }]);
-              setStep('listening');
+          const genMsg = {from: 'bot', text: 'Generating your itinerary...'};
+          const after = [...history, genMsg]
+          setMessages(after);
+          await persist('bot', genMsg.text);
+
+          let itin = 'Could not generate itinerary...';
+          try{
+            const res = await fetch(`${API_BASE}/api/plan`, 
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({session_id: sessionId, ...answers})
             });
-          return;
-        } else {
-          setMessages([...history, { from: 'bot', text: 'Okay, let me know what to change.' }]);
-          setStep('listening');
+            itin = (await res.json()).itinerary;
+          }catch (e){
+            console.error('Plan error:', e);
+          }
+          const response = {from: 'bot', text: itin};
+          const final = [...after, response]
+          setMessages(final);
+          await persist('bot', final);
+        }else{
+          const no = {from: 'bot', text: 'Okay, let me know what to change.'};
+          const cancel = [...history, no]
+          setMessages(cancel);
+          await persist('bot', no.text);
         }
-        break;
-
+        setStep('listening');
+        return;
       default:
         return;
     }
 
-    if (nextBotText) {
-      setMessages([...history, { from: 'bot', text: nextBotText }]);
-      setStep(nextStep);
+    if (question) {
+      setMessages([...history, {from: 'bot', text: question}]);
+      await persist('bot', question);
+      setStep(stp);
     }
+  };
+
+  const download = () => {
+    const txt = messages.map(m => `${m.from}: ${m.text}`).join('\n\n');
+    const blob = new Blob([txt], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'chat.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="chat-container">
-      <div className='chat-head'>
-        <button className='download-btn' onClick={download}> Download conversation (txt)</button>
+      <div className="chat-head">
+        <button onClick={download}>Download</button>
       </div>
       <div className="chat-window">
-        {messages.map((m,i) => (
+        {messages.map((m, i) => (
           <div key={i} className={`message ${m.from}`}>
             <div className="bubble">{m.text}</div>
           </div>
         ))}
-        <div ref={bottomRef} />
+        <div ref={msgInput} />
       </div>
-
       <div className="input-container">
         <input
           type="text"
@@ -165,13 +201,13 @@ export default function Chat({messages, step, answers, onSessionChange}) {
           disabled={step === 'loading'}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && input.trim() && sendMessage(input.trim())}
-          placeholder="Type your answer…"
+          placeholder="Type your answer..."
         />
         <button
           onClick={() => input.trim() && sendMessage(input.trim())}
           disabled={!input.trim() || step === 'loading'}
         >
-          {step === 'loading' ? '…' : 'Send'}
+          {step === 'loading' ? '...' : 'Send'}
         </button>
       </div>
     </div>
