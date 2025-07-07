@@ -89,9 +89,6 @@ export default function Conversation() {
 
   return (
     <>
-      <header className="app-header">
-        <button onClick={logout}>Log Out</button>
-      </header>
       <div className="app-container">
         <aside className="sidebar">
           <button className="new-chat-btn" onClick={createSession}> + New Chat </button>
@@ -107,6 +104,7 @@ export default function Conversation() {
               </li>
             ))}
           </ul>
+          <button className="logout-btn" onClick={logout}> Log Out </button>
         </aside>
         <main className="chat-panel">
           {activeSession ? (

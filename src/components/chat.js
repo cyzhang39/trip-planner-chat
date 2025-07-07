@@ -65,7 +65,8 @@ export default function Chat({messages = [], step, answers, onSessionChange, ses
     }
 
     const bot = {from: 'bot', text: response};
-    setMessages(prev => [...prev, bot]);
+    const nxt = [...history, bot]
+    setMessages(nxt);
     await persist('bot', response);
     setStep('listening');
   };
@@ -148,7 +149,7 @@ export default function Chat({messages = [], step, answers, onSessionChange, ses
           const response = {from: 'bot', text: itin};
           const final = [...after, response]
           setMessages(final);
-          await persist('bot', final);
+          await persist('bot', response.text);
         }else{
           const no = {from: 'bot', text: 'Okay, let me know what to change.'};
           const cancel = [...history, no]

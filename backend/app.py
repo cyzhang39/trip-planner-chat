@@ -53,9 +53,9 @@ def plan_trip(req: TripRequest, db: Session = Depends(get_db), current_user: mod
         print("Session not found")
 
     q = rag.build_query(req)
-    msg = models.Message(session_id=req.session_id, from_user="user", text=q)
-    db.add(msg)
-    db.commit()
+    # msg = models.Message(session_id=req.session_id, from_user="user", text=q)
+    # db.add(msg)
+    # db.commit()
 
     docs = rag.retrieve(q, k=3)
     itinerary = rag.generate_itinerary(q, docs)
@@ -78,7 +78,13 @@ def chat_followup(req: ChatRequest, db: Session = Depends(get_db), current_user:
     db.add(msg)
     db.commit()
 
-    answer = rag.followup(req.question, req.chat_history)
+    q = rag.followup_query(req.question, req.chat_history)
+    # msg = models.Message(session_id=req.session_id, from_user="user", text=q)
+    # db.add(msg)
+    # db.commit()
+
+    docs = rag.retrieve(q, k=3)
+    answer = rag.followup(req.question, req.chat_history, docs)
 
     bot = models.Message(session_id=req.session_id, from_user="bot", text=answer)
     db.add(bot)

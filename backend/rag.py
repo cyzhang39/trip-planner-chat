@@ -25,6 +25,7 @@ BASE_URL=os.getenv("HF_BASE_URL")
 RETRIEVE_URL=os.getenv("RETRIEVE_URL")
 MODEL="meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
+DEBUG=True
 
 client = OpenAI(
     api_key=API_KEY,
@@ -37,6 +38,12 @@ def build_query(req):
     info = f"Plan a detailed trip from {req.start_date} to {req.end_date} in {req.region}, for {req.party_size} people, with a budget per person of {req.budget}/day. Interested in {activities}. Extras: {extras}."
     return info
 
+def followup_query(question, history):
+    context = " ".join(turn["text"] for turn in history[-5:])
+    info = f"{context}\nFollow-up question: {question}"
+    return info
+
+
 def retrieve(query, k=3):
     resp = requests.post(RETRIEVE_URL, json={"query": query, "k": k})
     resp.raise_for_status()
@@ -44,6 +51,10 @@ def retrieve(query, k=3):
 
 
 def generate_itinerary(query, docs):
+    if DEBUG:
+        return docs[0]["page_content"][:100] if docs else "No documents retrieved."
+
+
     messages = [{"role": "system", "content": PROMPT}]
     for d in docs:
         messages.append({"role": "system", "content": d["page_content"]})
@@ -59,6 +70,8 @@ def generate_itinerary(query, docs):
     return resp.choices[0].message.content
 
 def followup(question, history, docs):
+    if DEBUG:
+        return docs[0]["page_content"][:100] if docs else "No documents retrieved."
     messages = [{"role": "system", "content": PROMPT}]
     for d in docs:
         messages.append({"role": "system", "content": d["page_content"]})
