@@ -1,30 +1,30 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
+from sqlalchemy.orm import Session
 
-from .rag import generate_itinerary, retrieve, build_query, followup
+from backend.database.db import SessionLocal, get_db
+from backend import schemas, auth, rag, sessions
+from backend.database import models
+
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:3000",
-]
-
-
+origins = ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],        
-    allow_headers=["*"],        
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-query = ""
-docs = None
-
+app.include_router(auth.router)
+app.include_router(sessions.router)
 
 class TripRequest(BaseModel):
+    session_id: int
     start_date: str
     end_date: str
     party_size: int
@@ -37,22 +37,51 @@ class TripResponse(BaseModel):
     itinerary: str
 
 class ChatRequest(BaseModel):
+    session_id: int
     question: str
     chat_history: List[dict]
 
 class ChatResponse(BaseModel):
     answer: str
 
+
 @app.post("/api/plan", response_model=TripResponse)
-async def plan_trip(req: TripRequest):
-    global query
-    global docs
-    query = build_query(req)
-    docs = retrieve(query, 3)
-    itinerary_text = generate_itinerary(query, docs)
-    return TripResponse(itinerary=itinerary_text)
+def plan_trip(req: TripRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+
+    ss = (db.query(models.ChatSession).filter_by(id=req.session_id, owner_id=current_user.id).first())
+    if not ss:
+        print("Session not found")
+
+    q = rag.build_query(req)
+    msg = models.Message(session_id=req.session_id, from_user="user", text=q)
+    db.add(msg)
+    db.commit()
+
+    docs = rag.retrieve(q, k=3)
+    itinerary = rag.generate_itinerary(q, docs)
+
+    bot = models.Message(session_id=req.session_id, from_user="bot", text=itinerary)
+    db.add(bot)
+    db.commit()
+
+    return TripResponse(itinerary=itinerary)
+
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
-    answer = followup(req.question, req.chat_history, docs)
+def chat_followup(req: ChatRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+
+    ss = (db.query(models.ChatSession).filter_by(id=req.session_id, owner_id=current_user.id).first())
+    if not ss:
+        print("Session not found")
+
+    msg = models.Message(session_id=req.session_id, from_user="user", text=req.question)
+    db.add(msg)
+    db.commit()
+
+    answer = rag.followup(req.question, req.chat_history)
+
+    bot = models.Message(session_id=req.session_id, from_user="bot", text=answer)
+    db.add(bot)
+    db.commit()
+
     return ChatResponse(answer=answer)
