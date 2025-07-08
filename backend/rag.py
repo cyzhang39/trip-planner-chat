@@ -25,7 +25,7 @@ BASE_URL=os.getenv("HF_BASE_URL")
 RETRIEVE_URL=os.getenv("RETRIEVE_URL")
 MODEL="meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
-DEBUG=True
+DEBUG=False
 
 client = OpenAI(
     api_key=API_KEY,

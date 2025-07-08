@@ -74,9 +74,9 @@ def chat_followup(req: ChatRequest, db: Session = Depends(get_db), current_user:
     if not ss:
         print("Session not found")
 
-    msg = models.Message(session_id=req.session_id, from_user="user", text=req.question)
-    db.add(msg)
-    db.commit()
+    # msg = models.Message(session_id=req.session_id, from_user="user", text=req.question)
+    # db.add(msg)
+    # db.commit()
 
     q = rag.followup_query(req.question, req.chat_history)
     # msg = models.Message(session_id=req.session_id, from_user="user", text=q)
