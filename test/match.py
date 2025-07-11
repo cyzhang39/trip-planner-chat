@@ -25,7 +25,6 @@ class HFInferenceClientEmbeddings:
         return self.embed_documents([text])[0]
 
     def __call__(self, text: str) -> list[float]:
-        # so FAISS.load_local & similarity_search can do `self.embedding_function(query)`
         return self.embed_query(text)
 
 embedder = HFInferenceClientEmbeddings(
