@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 
-dotenv_path = "configs/.env"
-load_dotenv(dotenv_path=dotenv_path)
+# dotenv_path = "configs/.env"
+load_dotenv()
 API_KEY=os.getenv("HF_KEY")
 EMB_URL=os.getenv("HF_EMB_URL")
 

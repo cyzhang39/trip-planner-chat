@@ -2,8 +2,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-dotenv_path = "configs/.env"
-load_dotenv(dotenv_path=dotenv_path)
+# dotenv_path = "configs/.env"
+load_dotenv()
 API_KEY=os.getenv("HF_KEY")
 BASE_URL=os.getenv("HF_BASE_URL")
 
@@ -20,7 +20,7 @@ completion = client.chat.completions.create(
             "content": "What is the capital of France?"
         }
     ],
-    max_tokens=130000,
+    max_tokens=1000,
 )
 
 print(completion.choices[0].message)
