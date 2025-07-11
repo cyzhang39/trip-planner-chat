@@ -1,0 +1,25 @@
+FROM node:16-bullseye
+
+RUN apt-get update \
+ && apt-get install -y python3.10 python3-pip \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY . .
+COPY .env.frontend .env
+
+
+RUN npm ci \
+ && npm install -g serve \
+ && npm run build 
+
+EXPOSE 8000 8001 3000
+
+CMD uvicorn backend.retrieve_service:app --host 0.0.0.0 --port 8001 & \
+    uvicorn backend.app:app             --host 0.0.0.0 --port 8000 & \
+    serve -s build -l 3000              & \
+    wait

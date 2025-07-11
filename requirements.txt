@@ -1,0 +1,17 @@
+openai
+python-dotenv
+python_jose==3.5.0
+requests==2.32.4
+fastapi
+pydantic==2.11.6
+langchain_huggingface==0.3.0
+sqlalchemy==2.0.41
+torch==2.7.1
+tqdm
+faiss-gpu==1.7.2
+pytest
+uvicorn==0.34.3
+passlib==1.7.4
+oracledb==3.2.0
+numpy==1.26.4
+sentence-transformers==4.1.0
