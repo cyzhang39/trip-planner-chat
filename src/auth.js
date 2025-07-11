@@ -1,4 +1,7 @@
 import React, {createContext, useState, useEffect} from 'react';
+// export const API_BASE = 'http://localhost:8000'
+export const API_BASE = `${process.env.REACT_APP_DOMAIN_NAME}:${process.env.REACT_APP_PORT}` || 'http://localhost:8000';
+
 
 export const AuthContext = createContext();
 
@@ -16,7 +19,7 @@ export function AuthProvider({children}) {
   }, []);
 
   const login = async (username, password) => {
-    const res = await fetch('http://localhost:8000/auth/login', 
+    const res = await fetch(`${API_BASE}/auth/login`, 
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,7 +34,7 @@ export function AuthProvider({children}) {
   };
 
   const register = async (username, password) => {
-    const res = await fetch('http://localhost:8000/auth/register', 
+    const res = await fetch(`${API_BASE}/auth/register`, 
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

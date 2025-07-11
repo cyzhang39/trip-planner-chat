@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 # from backend.database.db import get_db
 
-dotenv_path = "configs/.env"
-load_dotenv(dotenv_path)
+# dotenv_path = "configs/.env"
+load_dotenv()
 
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")

@@ -4,20 +4,21 @@ import os
 from pathlib import Path
 import requests
 
-dotenv_path = "configs/.env"
-load_dotenv(dotenv_path=dotenv_path)
+# dotenv_path = "configs/.env"
+load_dotenv()
 
 PROMPT = """
-You are a travel assistant. 
-Use itineraries and information below as reference if they are relevant, to craft a day-by-day itinerary. 
+You are a travel assistant.
+Use itineraries and information below as reference if they are relevant, to craft a day-by-day itinerary.
 Always answer in plain text, no markdown or styling characters.
-When you output the itinerary, structure it _exactly_ like this:
-#Day 1: <Day 1 activities>
-#Day 2: <Day 2 activities>
-…
-#Day N: <Day N activities>
-Be detailed on activities.
-Use one line per day, with “Day X:” at the start, and nothing else.
+When you output the itinerary, structure it exactly like this:
+
+#Day 1: <Day 1 activities> | Addresses: <Address 1>; <Address 2>; …  
+#Day 2: <Day 2 activities> | Addresses: <Address 1>; <Address 2>; …  
+…  
+#Day N: <Day N activities> | Addresses: <Address 1>; <Address 2>; …
+
+Be detailed about activities. Use one line per day.
 """
 
 API_KEY=os.getenv("HF_KEY")
@@ -31,6 +32,18 @@ client = OpenAI(
     api_key=API_KEY,
     base_url=BASE_URL
 )
+
+def extract_addresses(itinerary_text):
+    day_addrs = {}
+    pattern = re.compile(r'^#?Day\s+(\d+):.*\|\s*Addresses:\s*(.+)$')
+    for line in itinerary_text.splitlines():
+        m = pattern.match(line)
+        if not m:
+            continue
+        day = int(m.group(1))
+        addrs = [a.strip() for a in m.group(2).split(';') if a.strip()]
+        day_addrs[day] = addrs
+    return day_addrs
 
 def build_query(req):
     activities = ", ".join(req.activities)
@@ -85,6 +98,6 @@ def followup(question, history, docs):
     resp = client.chat.completions.create(
         model=MODEL,
         messages=messages,
-        temperature=0.3
+        temperature=0.1
     )
     return resp.choices[0].message.content    

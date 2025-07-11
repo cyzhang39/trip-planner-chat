@@ -3,15 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+import os
 
 from backend.database.db import SessionLocal, get_db
 from backend import schemas, auth, rag, sessions
 from backend.database import models
 
 
-app = FastAPI()
 
-origins = ["http://localhost:3000"]
+app = FastAPI()
+load_dotenv()
+ORIGIN = os.getenv('REACT_APP_DOMAIN_NAME')
+PORT = os.getenv('APP_PORT')
+
+origins = [ORIGIN, "http://localhost:3000", "http://tripplannerusa.com"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -60,9 +66,9 @@ def plan_trip(req: TripRequest, db: Session = Depends(get_db), current_user: mod
     docs = rag.retrieve(q, k=3)
     itinerary = rag.generate_itinerary(q, docs)
 
-    bot = models.Message(session_id=req.session_id, from_user="bot", text=itinerary)
-    db.add(bot)
-    db.commit()
+    # bot = models.Message(session_id=req.session_id, from_user="bot", text=itinerary)
+    # db.add(bot)
+    # db.commit()
 
     return TripResponse(itinerary=itinerary)
 
