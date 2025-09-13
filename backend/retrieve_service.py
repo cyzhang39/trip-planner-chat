@@ -10,7 +10,7 @@ from huggingface_hub import InferenceClient
 from langchain_community.vectorstores import FAISS
 
 load_dotenv()
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_TOKEN = os.getenv("HF_KEY")
 # device = "cuda" if torch.cuda.is_available() else "cpu"
 
 client = InferenceClient(

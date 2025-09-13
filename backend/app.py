@@ -17,7 +17,7 @@ print("tables created")
 
 app = FastAPI()
 load_dotenv()
-ORIGIN = os.getenv('REACT_APP_DOMAIN_NAME')
+ORIGIN = os.getenv('REACT_APP_API_ORIGIN')
 PORT = os.getenv('APP_PORT')
 # print(ORIGIN)
 origins = [ORIGIN, "http://localhost:3000", "http://tripplannerusa.com", "http://127.0.0.1:3000"]
