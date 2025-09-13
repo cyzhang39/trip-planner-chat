@@ -44,3 +44,7 @@ docker compose up --build
 #### Application: http://localhost:3000  
 
 
+## Screenshots Demo
+![Diagram of flow](examples/example01.png)
+![Diagram of flow](examples/example02.png)
+![Diagram of flow](examples/example03.png)
