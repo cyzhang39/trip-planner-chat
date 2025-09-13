@@ -1,0 +1,24 @@
+services:
+  db:
+    image: gvenzl/oracle-free:23.5-slim
+    environment:
+      ORACLE_PASSWORD: testerdb
+      APP_USER: apptester
+      APP_USER_PASSWORD: apptesterpass
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.main
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "3000:3000"

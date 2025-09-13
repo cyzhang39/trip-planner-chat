@@ -13,6 +13,7 @@ COPY . .
 COPY .env.frontend .env
 
 
+
 RUN npm ci \
  && npm install -g serve \
  && npm run build 

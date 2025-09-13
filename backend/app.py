@@ -9,15 +9,18 @@ import os
 from backend.database.db import SessionLocal, get_db
 from backend import schemas, auth, rag, sessions
 from backend.database import models
+from backend.database.db import Base, engine
 
 
+Base.metadata.create_all(bind=engine)
+print("tables created")
 
 app = FastAPI()
 load_dotenv()
 ORIGIN = os.getenv('REACT_APP_DOMAIN_NAME')
 PORT = os.getenv('APP_PORT')
-
-origins = [ORIGIN, "http://localhost:3000", "http://tripplannerusa.com"]
+# print(ORIGIN)
+origins = [ORIGIN, "http://localhost:3000", "http://tripplannerusa.com", "http://127.0.0.1:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -33,7 +36,7 @@ class TripRequest(BaseModel):
     session_id: int
     start_date: str
     end_date: str
-    party_size: int
+    party_size: str
     budget: str
     region: str
     activities: List[str]

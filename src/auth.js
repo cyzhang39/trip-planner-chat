@@ -1,6 +1,7 @@
 import React, {createContext, useState, useEffect} from 'react';
 // export const API_BASE = 'http://localhost:8000'
-export const API_BASE = `${process.env.REACT_APP_DOMAIN_NAME}:${process.env.REACT_APP_PORT}` || 'http://localhost:8000';
+// export const API_BASE = `${process.env.REACT_APP_DOMAIN_NAME}:${process.env.REACT_APP_PORT}` || 'http://localhost:8000';
+export const API_BASE = process.env.REACT_APP_API_ORIGIN || 'http://localhost:8000';
 
 
 export const AuthContext = createContext();

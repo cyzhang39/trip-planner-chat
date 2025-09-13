@@ -11,9 +11,14 @@ load_dotenv()
 
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_DSN = os.getenv("DB_DSN")  
+DB_HOST = os.getenv("DB_HOST", "db")
+DB_PORT = os.getenv("DB_PORT", "1521")
+DB_SERVICE = os.getenv("DB_SERVICE", "freepdb1")
 
-DATABASE_URL = f"oracle+oracledb://{DB_USER}:{DB_PASSWORD}@{DB_DSN}"
+DATABASE_URL = (
+    f"oracle+oracledb://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/?service_name={DB_SERVICE}"
+)
 
 engine = create_engine(
     DATABASE_URL,
